@@ -4,4 +4,5 @@ export interface IAuthService {
     signUp(email:string,password:string):Promise<IUser>;
     signIn(email:string,password:string):Promise<IUser>;
     logout():Promise<void>;
+    subscribe(cb: AuthChangeCallBack): () => void;
 }

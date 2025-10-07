@@ -14,7 +14,7 @@ export class AuthRepository implements IAuthRepository {
         return this.authService.logout();
     }
     onAuthStateChanged(cb: (u: IUser | null) => void): () => void {
-        throw new Error("Method not implemented.");
+        return this.authService.subscribe(cb);
     }
     
 }

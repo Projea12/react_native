@@ -1,23 +1,23 @@
 import React, { createContext, useCallback, useContext, useEffect, useReducer } from 'react';
 import { IUser } from '../domain/types';
-import { IAuthRepository } from '../domain/interfaces/i_auth_repository';
+import { FirebaseService } from '../data/services/firebase_services';
+import { AuthRepository } from '../data/repositories/auth_repository';
+import { auth } from '../config/firebase_config';
 
 type authStatus = 'idle'|'loading'|'authenticated'|'unauthenticated';
 
 type AuthState = {
     user: IUser| null
     status: authStatus;
-    initializing: boolean;
     error?: string| null;
 }
 
 type AuthAction = | {type:'Loading'}| {type:'Set_User';payLoad:IUser| null}| {type:'Error';payLoad:string|null}
-|{type:'initialize'};
+
 
 const initialState: AuthState = {
     user:null,
     status:'idle',
-    initializing:true,
     error:null,
 };
 
@@ -29,8 +29,6 @@ function reducer(state:AuthState, action:AuthAction):AuthState{
             return {...state,user:action.payLoad,status:action.payLoad ?'authenticated':'unauthenticated',error:null}
         case 'Error':
             return {...state,error:action.payLoad,status:'unauthenticated'}
-        case 'initialize':
-            return {...state,initializing:false}
         default:
             return state;
     }
@@ -46,15 +44,20 @@ const AuthActionsContext =  createContext<{
 
 
 
-export function AuthProvider({children, repository}:{children:React.ReactNode; repository:IAuthRepository}){
+export function AuthProvider({children}:{children:React.ReactNode}){
     const [state, dispatch] = useReducer(reducer, initialState);
+    
+    // Create instances directly without DI
+    const firebaseService = new FirebaseService(auth);
+    const repository = new AuthRepository(firebaseService);
+    
     useEffect(() => {
-        const unsub = repository.onAuthStateChanged((u) => {
+        const unsub = firebaseService.subscribe((u) => {
           dispatch({ type: 'Set_User', payLoad: u });
-          dispatch({ type: 'initialize' });
+         
         });
         return () => unsub();
-      }, [repository]);
+      }, [firebaseService]);
 
     const register = useCallback(async (email:string,password:string)=>{
         dispatch({type:'Loading'});
